@@ -1,0 +1,70 @@
+/*html{*/
+  
+  /*height: 100%;*/
+  /*width: 100%;*/
+  /*position: fixed;*/
+  /*border: 1px solid #154;*/
+/*}*/
+
+/*body{*/
+	
+/*  position: absolute;*/
+/*  overflow: hidden;*/
+  /*height: 100%;*/
+  /*width: 100%;*/
+/*  font-size:40px;*/
+/*  background-size: cover;*/
+/*  border: 1px solid #154;*/
+/*}*/
+
+html, body{
+  overflow: hidden; /*スクロール防止*/
+  background-size: cover; /*背景画像をフィットさせる*/
+	margin: 0;	/* 余白の削除 */
+	padding: 0;	/* 余白の削除 */
+	height: 100%;	/* 縦の高さを100% */
+	width: 100%;	/* 横の幅を100% */
+	/*webkit-text-size-adjust: 100%;*/
+}
+
+div#contents {
+	/*background-color: #999;*/
+	position: relative;		/* フッター部の配置用に定義 */
+	min-height: 100%;		/* 縦の表示領域を100% */
+}
+
+/*メッセージ入力ボックス+ボタン+ファイル入力を区切るdiv*/
+#div_box_id{
+	position: absolute;       /* 絶対位置指定することを定義 */
+	width:100%;
+	bottom: 0px;              /* 絶対位置指定(左0px,下0px) */
+	padding: 10px 0;          /* 上下に余白を取る */
+  border: 1px solid #F00;
+  /*font-size:1.0em;*/
+}
+
+
+.div_object{
+  text-align : center;
+  width: 90%;
+	margin: auto;           /* 中央揃え */
+  border: 1px solid #000;
+}
+
+#textBox, #button, #file{
+  font-size:1em;
+}
+
+/*##file{*/
+/*  font-size:1.2em;*/
+/*}*/
+
+
+#textBox{
+  /*border: 1px solid #154;*/
+}
+
+/*#canvasTouchRangeId{*/
+/*  position: fixed;*/
+/*  border: 1px solid #154;*/
+/*}*/

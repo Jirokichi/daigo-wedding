@@ -1,0 +1,46 @@
+<!DOCTYPE html5>
+<HTML>
+<HEAD> 
+<meta charset="utf8">
+<title>つるアプリ</title>
+<SCRIPT LANGUAGE="JavaScript1.2"> 
+var speed     = 100 ; // この値（ミリ秒）毎に画面が変わる
+var tt=  800 ;
+var pxa= 800 ; // 鶴のX方向位置(Pixel)
+var pya= 100 ; // 鶴のY方向位置(Pixel)
+var stp=   5 ; // 鶴の1回移動量(Pixel)
+
+function move(t) 
+{
+  pya = t   ;  //  下に移動させる場合には　pya を変更する 
+
+  document.getElementById("dot1").style.left = pxa ;
+  document.getElementById("dot1").style.top  = pya ;
+}
+
+function disp() 
+{
+  if(tt>=-160)
+  {
+    setTimeout("disp()", speed);
+  }
+  else
+  {
+    tt = 800  ; 
+    setTimeout("disp()", speed);
+  }
+  tt=tt-stp ;
+  move(tt) ;
+}
+</SCRIPT> 
+</HEAD> 
+<BODY BACKGROUND="sky.jpg" bgproperties="fixed"> 
+<div id="dot1" style="POSITION: absolute; Z-INDEX: 2; VISIBILITY: visible; TOP: 150px; LEFT: 15px; width:1;">
+<input type="text" value="ベー">
+<img src="img/tanchou03-o.gif" border="0">
+</div> 
+<SCRIPT> 
+disp() ;
+</SCRIPT> 
+</BODY> 
+</HTML>
