@@ -10,14 +10,14 @@
     <link rel="stylesheet" type="text/css" href="css/daigo.css" media="all">
 </head>
 <body ontouchmove="event.preventDefault()" background="img/backImage.jpg">
-  <div id=contents>
+  <div id=contents >
     <canvas id="canvasTouchRangeId"></canvas>
     <img src="" id="previewImage" style="display:none; position: absolute;" alt="写真"/> 
     
     <div id="div_box_id">
       <div class="div_object"> 
         <input type="text" value="" id="textBox" onblur = "onMyBlur()"> 
-        <button type="button" id="button" onClick="createNewText()" >送信</button> 
+        <button type="button" id="button" onClick="send()" >送信</button> 
       </div>
       <div class="div_object"> 
         <input type="file" id="file"></input>
@@ -28,4 +28,10 @@
   </script>
   
 </body>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/js/jquery.min.js"></script>
+<script src="/js/bootstrap.min.js"></script>
+<script src="/js/angular.min.js"></script>
+
 </html>

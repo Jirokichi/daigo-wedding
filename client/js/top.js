@@ -11,8 +11,6 @@ function submit(){
         alert("名前が不適切です。");
         return;
     }
-    
-    
     localStorage.setItem(KEY,name);
 }
 

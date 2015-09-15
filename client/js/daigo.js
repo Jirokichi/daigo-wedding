@@ -3,6 +3,8 @@
 <!--[if IE]><script type="text/javascript" src="excanvas.js"></script><![endif]-->
 
 var DEBUG = true;
+var KEY = "KEY_NAME"; <!--　このキーはdaigo.jsでも同じものである必要がある -->
+
 
 var textField = null;
 var hasTextbox = false;
@@ -15,15 +17,124 @@ var addText = false;
 var WINDOW_WITDH;
 var WINDOW_HEIGHT;
 
+var userName = localStorage.getItem(KEY);
+console.log("start daigo.js");
+console.log("userName:" + userName);
 
-// function onMyBlur(){
-//   console.log("キーボードとじたね:" + addText);
-//   if(addText){
-//     alert("キーボードとじたね:" + addText);
-//     addText = false;
-//   }
-// }
+var file = null;
+/**
+ * 読み込み時の処理
+ * */
+window.onload = function() {
+  console.log("onload");
+  // body
+  WINDOW_WITDH = window.innerWidth;//$("body").width();
+  WINDOW_HEIGHT = window.innerHeight;//$("body").height();
+  console.log("width:" + WINDOW_WITDH);
+  console.log("height:" + WINDOW_HEIGHT);
+};
 
+$('#file').change(
+  function() {
+    console.log("onChangeFile");
+    if ( !this.files.length ) {
+        return;
+    }
+  
+    file = $(this).prop('files')[0];
+    console.log("file:");
+    console.log(file);
+    var fr = new FileReader();
+    fr.onload = function() {  
+      $('#previewImage').attr('src', fr.result ).css('display','inline');
+    }
+    fr.readAsDataURL(file);
+    
+    
+    // 新しい画像を追加
+    var image = document.getElementById('#previewImage'); 
+    // 画面中央に配置（本当は降ってくるようにしたい）
+    var x_image = WINDOW_WITDH/2 - $("#previewImage").clientWidth/2;
+    var y_image = WINDOW_HEIGHT/2 - $("#previewImage").clientHeight/2;
+    console.log("WINDOW_WITDH:" + WINDOW_WITDH);
+    console.log("WINDOW_HEIGHT:" + WINDOW_HEIGHT);
+    
+    console.log("x_image:" + x_image);
+    console.log("y_image:" + y_image);
+    image.style.left = x_image;//"15px";//
+    image.style.top = y_image;//"150px";//
+  }
+);
+
+
+function send(){
+  console.log("send()");
+  var textBoxValue = $('#textBox').val();
+  console.log("textBoxValue:"+textBoxValue);
+  console.log("createNewText:" + document.getElementById(textFieldID));
+  if(textBoxValue == null || textBoxValue == ""){
+    alert("値を入力してください。")
+    return;
+  }
+  if(textField != null){
+    console.log("すでに送信候補文字が画面に表示されています。送信したい場合は上部に移動させてください。");
+    alert("すでに送信候補文字が画面に表示されています。送信したい場合は上部に移動させてください。")
+    return;
+  }
+  
+  
+  
+  
+  // 文字の送信処理
+  console.log("送信開始:" + userName);
+  var socket = io.connect();
+  socket.json.emit("emit_from_client", { msg:textBoxValue, userName:userName});
+  console.log("送信終了");
+  
+  // 画像の送信
+  
+  // var file = input.files[0];
+  // var name = file.name;
+  // var reader = new FileReader();
+  // reader.onloadend = function (e) {
+  //   var data = e.target.result;
+  //   if (!data) {
+  //     return ;
+  //   }
+  //   socket.emit('upload', { name : name, data : data});
+  // };
+  // reader.readAsDataURL(file);
+  
+  
+  console.log("file:");
+  console.log(file);
+  if(file != null){
+    console.log("ファイル読み込みあり");
+    var name = file.name;
+    var reader = new FileReader();
+    reader.onloadend = function (e) {
+      var data = e.target.result;
+      if (!data) {
+        return ;
+      }
+      console.log("upload:" + name);
+      socket.emit('upload_from_client', { name : name, data : data});
+      console.log("upload end:");
+    };  
+    reader.readAsDataURL(file);
+  }
+}
+
+
+
+
+/**********************************************
+ *  これ以下は利用していない
+ **********************************************/
+/**
+ * テキストを一度プレビューする場合に利用する
+ * コメント：プレビューは画像のみにし、送信ボタンをタップしたらかならずそのメッセージを送信するようにする。
+ * */
 function createNewText(){
 
   var textBoxValue = $('#textBox').val();
@@ -130,86 +241,3 @@ function createNewText(){
     }
 
 }
-
-$('#file').change(
-  function() {
-    console.log("onChangeFile");
-    if ( !this.files.length ) {
-        return;
-    }
-  
-    var file = $(this).prop('files')[0];
-    var fr = new FileReader();
-    fr.onload = function() {  
-      $('#previewImage').attr('src', fr.result ).css('display','inline');
-    }
-    fr.readAsDataURL(file);
-    
-    
-    // 新しいテキストを追加
-    var image = document.getElementById('#previewImage'); 
-    // 画面中央に配置（本当は降ってくるようにしたい）
-    var x_image = WINDOW_WITDH/2 - $("#previewImage").clientWidth/2;
-    var y_image = WINDOW_HEIGHT/2 - $("#previewImage").clientHeight/2;
-    console.log("WINDOW_WITDH:" + WINDOW_WITDH);
-    console.log("WINDOW_HEIGHT:" + WINDOW_HEIGHT);
-    
-    console.log("x_image:" + x_image);
-    console.log("y_image:" + y_image);
-    image.style.left = x_image;//"15px";//
-    image.style.top = y_image;//"150px";//
-  }
-);
-
-
-// function draw() {
-//   /* canvas要素のノードオブジェクト */
-//   var canvas = document.getElementById('canvasTouchRangeId');
-//   /* canvas要素の存在チェックとCanvas未対応ブラウザの対処 */
-//   if ( ! canvas || ! canvas.getContext ) {
-//     return false;
-//   }
-  
-  
-//   // canvas.style.width = window.innerWidth;
-//   // canvas.style.height = window.innerHeight * 3/4;
-  
-//   /* 2Dコンテキスト */
-//   var ctx = canvas.getContext('2d');
-//   /* 四角を描く */
-//   ctx.strokeRect(5, 5, 520, 120)
-//   // ctx.beginPath();
-//   // ctx.moveTo(5, 5);
-//   // ctx.lineTo(window.innerWidth - 5, 5);
-//   // ctx.lineTo(window.innerWidth - 5, window.innerHeight - 5);
-//   // ctx.lineTo(5, window.innerHeight - 5);
-//   // ctx.closePath();
-//   // ctx.stroke();
-// }
-
-
-// 読み込み終了時に呼び出されるイベント
-// $("body").on(
-//   function(){
-//     console.log("body onLoad")
-    
-    
-    
-    
-//   }
-// );
-
-
-
-onload = function() {
-  console.log("onload");
-  // body
-  WINDOW_WITDH = window.innerWidth;//$("body").width();
-  WINDOW_HEIGHT = window.innerHeight;//$("body").height();
-
-  
-  console.log("width:" + WINDOW_WITDH);
-  console.log("height:" + WINDOW_HEIGHT);
-  
-  // draw();
-};
