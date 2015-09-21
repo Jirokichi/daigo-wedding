@@ -3,7 +3,7 @@
 <!--[if IE]><script type="text/javascript" src="excanvas.js"></script><![endif]-->
 
 var DEBUG = true;
-var KEY = "KEY_NAME"; <!--　このキーはdaigo.jsでも同じものである必要がある -->
+var KEY_USERNAME = "KEY_NAME"; /*　top.jsでも同じものである必要がある・ユーザ名を保存するためのキー */
 
 
 var textField = null;
@@ -13,13 +13,19 @@ var textFieldY = document.offsetHeight/2;
 var textFieldID = "textField";
 var addText = false;
 
-
 var WINDOW_WITDH;
 var WINDOW_HEIGHT;
 
-var userName = localStorage.getItem(KEY);
+var userName = localStorage.getItem(KEY_USERNAME);
 console.log("start daigo.js");
 console.log("userName:" + userName);
+console.log("navigator.userAgent:" + navigator.userAgent);
+
+var type = 0;// iPad/iPhoneの場合は1となるようにする
+if(navigator.userAgent.indexOf("iPad") > 0 || navigator.userAgent.indexOf("iPhone") > 0){
+  type = 1;
+  // alert("iOS!");
+}
 
 var file = null;
 /**
@@ -34,6 +40,15 @@ window.onload = function() {
   console.log("height:" + WINDOW_HEIGHT);
 };
 
+window.onerror = function(error) {
+    alert(error);
+};
+
+function onMyBlur(){
+  console.log("onMyBlur()");
+}
+
+// ファイルを選択したときに呼び出されるメソッド
 $('#file').change(
   function() {
     console.log("onChangeFile");
@@ -42,33 +57,89 @@ $('#file').change(
     }
   
     file = $(this).prop('files')[0];
-    console.log("file:");
+    console.log("file:" + file.size);
     console.log(file);
     var fr = new FileReader();
-    fr.onload = function() {  
-      $('#previewImage').attr('src', fr.result ).css('display','inline');
+    fr.onload = function(e) {
+      console.log("FileReader onload:");
+      var data = e.target.result;
+      var orientation = getOrientation(data);
+      console.log("orientation:" + orientation);
+      if(type == 1){
+        // iOSの場合は、なぜかexifのorientationがあるにも関わらず、読み込んだファイルがすでに反映された結果となっているため、
+        // orientationを1として扱う
+        alert("orientation: " + orientation + "(iOS)");
+        orientation = 1;
+      }else{
+        alert("orientation:" + orientation);
+      }
+      
+      var rotateStyle = exif_orientation_to_css(orientation);
+      
+      console.log("rotateStyle:" + rotateStyle)
+      $('#previewImage').attr('src', fr.result ).css("transform", rotateStyle).css('display','inline').load(function(){
+        //テキストボックスのフィールドには画像が被らないようにする必要があるため、その高さを取得
+        var textElementHeight = document.getElementById('div_box_id').scrollHeight;
+        var OrgWidth = document.getElementById('previewImage').naturalWidth;
+        var OrgHeight = document.getElementById('previewImage').naturalHeight;
+        console.log("textElementHeight:" + textElementHeight);
+        console.log("OrgWidth:" + OrgWidth);
+        console.log("OrgHeight:" + OrgHeight);
+         
+        // 新しい画像を追加
+        var image = document.getElementById('previewImage'); 
+        
+        // 表示する画像サイズを調整する
+        var p = 1.0;
+        
+        // テキストボックス分縦の範囲は狭くなる
+        var DIFF_HEIGHT = WINDOW_HEIGHT - textElementHeight;
+        console.log("DIFF_HEIGHT:" + DIFF_HEIGHT);
+        
+        // ９０度回転など、縦横が入れ替わる場合には事前に最大幅、高さを入れ替えておく
+        var window_width = WINDOW_WITDH;
+        if (orientation > 4) {
+          p = cal_p(OrgWidth, OrgHeight, DIFF_HEIGHT, WINDOW_WITDH);
+        }else{
+          p = cal_p(OrgWidth, OrgHeight, WINDOW_WITDH, DIFF_HEIGHT);
+        }
+        
+        console.log("p:" + p);
+        image.width = OrgWidth * p;
+        image.height = OrgHeight * p;
+        console.log("image.width:" + image.width);
+        console.log("image.height:" + image.height);
+        
+        
+        
+        var x_image = ( WINDOW_WITDH - image.width ) / 2;
+        var y_image = (WINDOW_HEIGHT - image.height - textElementHeight ) / 2;
+        console.log("WINDOW_WITDH:" + WINDOW_WITDH);
+        console.log("WINDOW_HEIGHT:" + WINDOW_HEIGHT);
+        console.log("x_image(image.style.leftにセットする値):" + x_image);
+        console.log("y_image(image.style.topにセットする値):" + y_image);
+        
+        image.style.left = x_image;
+        image.style.top = y_image;
+        
+        //表示に変更 
+        // $('#previewImage');
+        console.log("image.scrollHeight:" + image.scrollHeight);
+        console.log("image.scrollWidth:" + image.scrollWidth);
+      });
     }
     fr.readAsDataURL(file);
-    
-    
-    // 新しい画像を追加
-    var image = document.getElementById('#previewImage'); 
-    // 画面中央に配置（本当は降ってくるようにしたい）
-    var x_image = WINDOW_WITDH/2 - $("#previewImage").clientWidth/2;
-    var y_image = WINDOW_HEIGHT/2 - $("#previewImage").clientHeight/2;
-    console.log("WINDOW_WITDH:" + WINDOW_WITDH);
-    console.log("WINDOW_HEIGHT:" + WINDOW_HEIGHT);
-    
-    console.log("x_image:" + x_image);
-    console.log("y_image:" + y_image);
-    image.style.left = x_image;//"15px";//
-    image.style.top = y_image;//"150px";//
   }
 );
 
 
+
+// 送信ボタンがクリックされたときの処理
 function send(){
   console.log("send()");
+
+  
+  
   var textBoxValue = $('#textBox').val();
   console.log("textBoxValue:"+textBoxValue);
   console.log("createNewText:" + document.getElementById(textFieldID));
@@ -82,46 +153,112 @@ function send(){
     return;
   }
   
-  
-  
+  var ok = window.confirm("送信していいですか？");
+  if(!ok){
+    console.log("キャンセル");
+    return;
+  }
   
   // 文字の送信処理
   console.log("送信開始:" + userName);
   var socket = io.connect();
-  socket.json.emit("emit_from_client", { msg:textBoxValue, userName:userName});
+  socket.json.emit("emit_from_client", { msg:textBoxValue, userName:userName, imgPath:"test.png"});
   console.log("送信終了");
   
   // 画像の送信
-  
-  // var file = input.files[0];
-  // var name = file.name;
-  // var reader = new FileReader();
-  // reader.onloadend = function (e) {
-  //   var data = e.target.result;
-  //   if (!data) {
-  //     return ;
-  //   }
-  //   socket.emit('upload', { name : name, data : data});
-  // };
-  // reader.readAsDataURL(file);
-  
-  
   console.log("file:");
   console.log(file);
   if(file != null){
     console.log("ファイル読み込みあり");
     var name = file.name;
     var reader = new FileReader();
+    console.log("name:" + name);
+    var maxLength = 1000;
     reader.onloadend = function (e) {
       var data = e.target.result;
+      var orientation = getOrientation(data);
+      var rotateAngle = exif_rotate_z_orientation_to_css(orientation);
+      console.log("orientation:" + orientation);
+      console.log("rotateAngle:" + rotateAngle);
+      
       if (!data) {
         return ;
       }
       console.log("upload:" + name);
-      socket.emit('upload_from_client', { name : name, data : data});
+      
+      var OrgWidth = document.getElementById('previewImage').naturalWidth;
+      var OrgHeight = document.getElementById('previewImage').naturalHeight;
+      
+      var larger = (OrgWidth > OrgHeight) ? OrgWidth : OrgHeight;
+      var p = 1.0;
+      if(larger > maxLength){
+        p = maxLength / larger;
+      }
+      
+      var sentWidth, sentHeight;
+      if(type == 1 && orientation > 4){
+        sentWidth = OrgHeight * p;
+        sentHeight = OrgWidth * p;
+      }else{
+        sentWidth = OrgWidth * p;
+        sentHeight = OrgHeight * p;
+      }
+      ImgB64Resize(data, sentWidth, sentHeight, rotateAngle,
+          function(img_b64) {
+              socket.emit('upload_from_client', { name : name, data : img_b64});
+          }
+      );
       console.log("upload end:");
-    };  
+      
+      // 送信終了後の処理(本来は完了通知がきてから実施するべき)
+      $('#previewImage').attr('src', null ).css('display','none');
+      file = null;
+      $('#file').val(null);
+      $('#textBox').val(null);
+      
+    };
     reader.readAsDataURL(file);
+  }
+  
+  // Resize Base64 Image
+  //   imgB64_src: string | "data:image/png;base64,xxxxxxxx"
+  //   width     : number | dst img w
+  //   height    : number | dst img h
+  //   rotate    : number | dst img r 0/90/180/270 only
+  // http://qiita.com/stakei1/items/590788e6c9b2f8e6b3d2
+  function ImgB64Resize(imgB64_src, width, height, rotate, callback) {
+      // Image Type
+      var img_type = imgB64_src.substring(5, imgB64_src.indexOf(";"));
+      // Source Image
+      var img = new Image();
+      img.onload = function() {
+          // New Canvas
+          var canvas = document.createElement('canvas');
+          if(rotate == 90 || rotate == 270) {
+              // swap w <==> h
+              canvas.width = height;
+              canvas.height = width;
+          } else {
+              canvas.width = width;
+              canvas.height = height;
+          }
+          // Draw (Resize)
+          var ctx = canvas.getContext('2d');
+          if(0 < rotate && rotate < 360) {
+              ctx.rotate(rotate * Math.PI / 180);
+              if(rotate == 90)
+                  ctx.translate(0, -height);
+              else if(rotate == 180)
+                  ctx.translate(-width, -height);
+              else if(rotate == 270)
+                  ctx.translate(-width, 0);
+          }
+          ctx.drawImage(img, 0, 0, width, height);
+          // Destination Image
+          var imgB64_dst = canvas.toDataURL(img_type);
+          callback(imgB64_dst);
+      };
+      img.src = imgB64_src;
   }
 }
 
@@ -151,7 +288,10 @@ function createNewText(){
   }
   
   addText = true;
+  
+  // textBoxからフォーカスを外す
   $("textBox").blur();
+  
   // 新しいテキストを追加
   textField = document.createElement('div'); 
   textField.id = "textFieldID";

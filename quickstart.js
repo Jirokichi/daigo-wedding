@@ -3,7 +3,7 @@
 /**
  * これより下はGoogle Driveのための処理
  * */
-var i_debug=0; // for debug
+var jsonNumber=0; // for debug
 var myGoogleDrive = require("./googledrive.js");
 var fs = require('fs');
 var google = require('googleapis');
@@ -22,27 +22,10 @@ console.log("Called authorize method")
  */
 function onStartInitialCallForGoogleDrive(auth) {
   console.log('~~~~ Start startInitialCallForGoogleDrive');
-  
   // ファイルリストの取得
   // myGoogleDrive.getGoogleDriveFileList(auth, testAddImage);
   console.log('~~~~ Finish startInitialCallForGoogleDrive');
 }
-
-// function testAddImage(auth){
-//   console.log("||||||||| start testaddImage")
-//   // リスト表示後に検証でファイルをアップロード
-//   require('date-utils')
-//   var dt = new Date();
-//   var formatted = dt.toFormat("YYYYMMDDHH24MISS");
-//   console.log(formatted);
-//   var imageFile = fs.readFileSync('backImage.jpg');
-//   myGoogleDrive.imageFile = imageFile;
-//   myGoogleDrive.imageFileName = "検証_"+formatted+".jpg";
-  
-//   console.log("testAddImage: %s(%s)", myGoogleDrive.imageFileName);
-//   myGoogleDrive.insertDocs(auth);
-//   console.log("||||||||| finish testaddImage")
-// }
 
 
 /**
@@ -60,18 +43,25 @@ var server = http.createServer(router);
 var io = socketio.listen(server);
 
 router.use(express.static(path.resolve(__dirname, 'client')));
-var messages = [];
 var sockets = [];
 
 io.on('connection', function (socket) {
     
-    // socket.on('disconnect', function () {
-    //   sockets.splice(sockets.indexOf(socket), 1);
-    //   updateRoster();
-    // });
-    
     socket.on("emit_from_client", function(data){
       console.log("初めての"+ data.userName + "のsoket.io:" + data.msg);
+      var jsonfileName = jsonNumber + '.json';
+      // var outputPath = './public/' + jsonfileName;
+      // fs.writeFile(outputPath, JSON.stringify(data, null, '    '));
+      
+      myGoogleDrive.jsonFile = JSON.stringify(data, null, '    ');//imageFile;
+      myGoogleDrive.jsonFileName = jsonfileName;
+      myGoogleDrive.authorize(onStartUploadJSONFileToGoogleDrive);
+      function onStartUploadJSONFileToGoogleDrive(auth) {
+        console.log('~~~~ Start startInitialCallForGoogleDrive');
+        myGoogleDrive.insertJson(auth);
+        console.log('~~~~ Finish startInitialCallForGoogleDrive');
+        jsonNumber++;
+      }
     });
 
     socket.on('upload_from_client', function (data) {
@@ -88,17 +78,17 @@ io.on('connection', function (socket) {
       }
   
       // 保存するならば
-      var now = new Date().getTime();
-      var outputPath = './public/' + now + name;
+      // var now = new Date().getTime();
+      // var outputPath = './public/' + now + name;
   
-      fs.writeFile(
-          outputPath,
-          new Buffer(base64, 'base64'),
-          function (err) {
-            　console.log("fs.writeFile")
-              console.log(err);
-          }
-      );
+      // fs.writeFile(
+      //     outputPath,
+      //     new Buffer(base64, 'base64'),
+      //     function (err) {
+      //       　console.log("fs.writeFile")
+      //         console.log(err);
+      //     }
+      // );
       
       // 起動時に認証操作を実施する
       // var imageFile = fs.readFileSync("public/1442321209075Sample.png");
@@ -109,32 +99,14 @@ io.on('connection', function (socket) {
       myGoogleDrive.authorize(onStartUploadFileToGoogleDrive);
       function onStartUploadFileToGoogleDrive(auth) {
         console.log('~~~~ Start startInitialCallForGoogleDrive');
-        myGoogleDrive.insertDocs(auth);
+        myGoogleDrive.insertImage(auth);
         console.log('~~~~ Finish startInitialCallForGoogleDrive');
       }
       // もしアップロード終了時に合図が欲しいならば
       // socket.emit('notify', {url : publicUrl});
     });
-
-    // socket.on('identify', function (name) {
-    //   socket.set('name', String(name || 'Anonymous'), function (err) {
-    //     updateRoster();
-    //   });
-    // });
     
   });
-
-// function updateRoster() {
-//   async.map(
-//     sockets,
-//     function (socket, callback) {
-//       socket.get('name', callback);
-//     },
-//     function (err, names) {
-//       broadcast('roster', names);
-//     }
-//   );
-// }
 
 /**
  * 画像アップロードのための認証後に呼び出されるメソッド
@@ -145,7 +117,7 @@ function onStartUploadCallForGoogleDrive(auth) {
   console.log('~~~~ Start onStartUploadCallForGoogleDrive');
   
   // ファイルリストの取得
-  myGoogleDrive.insertDocs(auth);
+  myGoogleDrive.insertImage(auth);
   console.log('~~~~ Finish onStartUploadCallForGoogleDrive');
 }
 

@@ -1,26 +1,38 @@
 var fs = require('fs');
 var googleAuth = require('google-auth-library');
+
 var SCOPES = ['https://www.googleapis.com/auth/drive.metadata.readonly', 'https://www.googleapis.com/auth/drive.file'];
+// 認証トークンを保存するファイルの保存されるディレクトリ
 var TOKEN_DIR = (process.env.HOME || process.env.HOMEPATH ||
     process.env.USERPROFILE) + '/.credentials/';
+// 認証トークンを保存するファイルのパス
 var TOKEN_PATH = TOKEN_DIR + 'drive-api-quickstart.json';
 var readline = require('readline');
 var google = require('googleapis');
 
 
-
-
-
-var imageFileName = null;
+// アップロードするファイルの名前
+// メソッドの引数で設定するようにも実装はできるが、いちいち記述するのがめんどくさいのでグローバル変数として利用している。
+// つまり、特定のメソッドを呼び出す前に、これらの値を埋める必要がある
+var imageFileName = null , imageFile = null;
 exports.imageFileName = imageFileName;
-
-var imageFile = null;
 exports.imageFile = imageFile;
+
+
+// アップロードするファイルの名前
+// メソッドの引数で設定するようにも実装はできるが、いちいち記述するのがめんどくさいのでグローバル変数として利用している。
+// つまり、特定のメソッドを呼び出す前に、これらの値を埋める必要がある
+var jsonFileName = null , jsonFile = null;
+exports.jsonFileName = jsonFileName;
+exports.jsonFile = jsonFile;
+
+
+
 
 /**
  * 認証後にコールバック関数を呼び出すためのメソッド
  * 認証のために必要な情報はclient_secret.jsonから読み込む
- * なお、tokenも上記json内に保存する。
+ * なお、tokenはTOKEN_PATHのファイルに保存する/されている。
  * 
  */
 function authorize(callback){
@@ -49,8 +61,8 @@ exports.authorize = authorize;
 
 
 /**
- * Create an OAuth2 client with the given credentials, and then execute the
- * given callback function.
+ * 認証トークンを取得/読み込む処理
+ * TOKEN_PATHから認証トークンの情報を取得し、有効な値でなければ、新たに認証トークンを作成する
  *
  * @param {Object} credentials The authorization client credentials.
  * @param {function} callback The callback to call with the authorized client.
@@ -72,7 +84,11 @@ function authorizeBasedOnInfo(oauth2Client, callback) {
 }
 
 /**
- * 認証トークンが保存されていなかった場合のみ呼び出され、認証トークンを取得する
+ * 認証トークンが保存されていなかった場合のみ呼び出され、認証トークンを取得し、保存する。
+ * 保存後にはcallback関数が呼び出される
+ * 
+ * 注意：ここではサーバーのCUI上でコードを入力してあげる必要がある
+ * 
  */
 function getNewToken(oauth2Client, callback) {
   console.log("@@@@@ Start getNewToken");
@@ -119,8 +135,12 @@ function storeToken(token) {
 }
 
 
-function insertDocs(auth, callback){
-  // ファイルのアップロード resourceでパラメータを指定するのがなかなかわからなかった
+
+/**
+ * imageFileNameとimageFileをもとに画像ファイルをアップロードするためのメソッド
+ * 
+ * **/
+function insertImage(auth, callback){
   console.log("insertDocs: %s(%s)", this.imageFileName);
   var drive = google.drive('v2');
   drive.files.insert({
@@ -134,20 +154,47 @@ function insertDocs(auth, callback){
       body: this.imageFile
     }
   }, function(err,res){
-    // console.log('insertDocs return');
     if(err !== undefined && err !== null){
       console.error(err);
     }
-    
     console.log("Upload Completed");
     // console.log(res)
     // 下記のURLでアップロードしたファイルに直接アクセスできるのはファイルのパーミッションがpublicの時のみ
     // console.log('https://docs.google.com/a/ドメイン名/uc?id='+res.id);
   });
 }
-exports.insertDocs = insertDocs;
+exports.insertImage = insertImage;
 
+function insertJson(auth, callback){
+  console.log("insertDocs: %s(%s)", this.jsonFileName);
+  var drive = google.drive('v2');
+  drive.files.insert({
+    auth: auth,
+    resource: {
+      title: this.jsonFileName,
+      mimeType: 'application/json',
+    },
+    media: {
+      mimeType: 'application/json',
+      body: this.jsonFile
+    }
+  }, function(err,res){
+    console.error("test");
+    if(err !== undefined && err !== null){
+      console.error(err);
+    }
+    console.log("Upload Completed: JSON file");
+    // console.log(res)
+    // 下記のURLでアップロードしたファイルに直接アクセスできるのはファイルのパーミッションがpublicの時のみ
+    // console.log('https://docs.google.com/a/ドメイン名/uc?id='+res.id);
+  });
+}
+exports.insertJson = insertJson;
 
+/**
+ * GoogleDrive上のファイルのリストを取得するためのメソッド
+ * 
+ * **/
 function getGoogleDriveFileList(auth, callback){
   console.log("start getGoogleDriveFileList");
   var service = google.drive('v2');
