@@ -6,12 +6,6 @@ var DEBUG = true;
 var KEY_USERNAME = "KEY_NAME"; /*　top.jsでも同じものである必要がある・ユーザ名を保存するためのキー */
 
 
-var textField = null;
-var hasTextbox = false;
-var textFieldX = document.offsetWidth/2;
-var textFieldY = document.offsetHeight/2;
-var textFieldID = "textField";
-var addText = false;
 
 var WINDOW_WITDH;
 var WINDOW_HEIGHT;
@@ -40,6 +34,21 @@ window.onload = function() {
   console.log("height:" + WINDOW_HEIGHT);
 };
 
+
+var timer = false;
+$(window).resize(function() {
+    if (timer !== false) {
+        clearTimeout(timer);
+    }
+    timer = setTimeout(function() {
+        console.log('resized');
+        WINDOW_WITDH = window.innerWidth;//$("body").width();
+        WINDOW_HEIGHT = window.innerHeight;//$("body").height();
+        console.log("resize-width:" + WINDOW_WITDH);
+        console.log("resize-height:" + WINDOW_HEIGHT);
+    }, 200);
+});
+
 window.onerror = function(error) {
     alert(error);
 };
@@ -49,7 +58,7 @@ function onMyBlur(){
 }
 
 // ファイルを選択したときに呼び出されるメソッド
-$('#file').change(
+$('#fileId').change(
   function() {
     console.log("onChangeFile");
     if ( !this.files.length ) {
@@ -68,26 +77,28 @@ $('#file').change(
       if(type == 1){
         // iOSの場合は、なぜかexifのorientationがあるにも関わらず、読み込んだファイルがすでに反映された結果となっているため、
         // orientationを1として扱う
-        alert("orientation: " + orientation + "(iOS)");
+        console.log("orientation: " + orientation + "(iOS)");
         orientation = 1;
       }else{
-        alert("orientation:" + orientation);
+        console.log("orientation:" + orientation);
       }
       
       var rotateStyle = exif_orientation_to_css(orientation);
       
       console.log("rotateStyle:" + rotateStyle)
-      $('#previewImage').attr('src', fr.result ).css("transform", rotateStyle).css('display','inline').load(function(){
+      $('#previewImageId').attr('src', fr.result ).css("transform", rotateStyle).css('display','inline').load(function(){
+        
+        // 新しい画像を追加
+        var image = document.getElementById('previewImageId'); 
         //テキストボックスのフィールドには画像が被らないようにする必要があるため、その高さを取得
-        var textElementHeight = document.getElementById('div_box_id').scrollHeight;
-        var OrgWidth = document.getElementById('previewImage').naturalWidth;
-        var OrgHeight = document.getElementById('previewImage').naturalHeight;
+        var textElementHeight = document.getElementById('div_inputArea_id').scrollHeight;
+        var OrgWidth = image.naturalWidth;
+        var OrgHeight = image.naturalHeight;
         console.log("textElementHeight:" + textElementHeight);
         console.log("OrgWidth:" + OrgWidth);
         console.log("OrgHeight:" + OrgHeight);
          
-        // 新しい画像を追加
-        var image = document.getElementById('previewImage'); 
+        
         
         // 表示する画像サイズを調整する
         var p = 1.0;
@@ -138,43 +149,67 @@ $('#file').change(
 function send(){
   console.log("send()");
 
-  
-  
-  var textBoxValue = $('#textBox').val();
+  var message;
+  var textBoxValue = $('#textAreaId').val();
   console.log("textBoxValue:"+textBoxValue);
-  console.log("createNewText:" + document.getElementById(textFieldID));
-  if(textBoxValue == null || textBoxValue == ""){
-    alert("値を入力してください。")
-    return;
-  }
-  if(textField != null){
-    console.log("すでに送信候補文字が画面に表示されています。送信したい場合は上部に移動させてください。");
-    alert("すでに送信候補文字が画面に表示されています。送信したい場合は上部に移動させてください。")
-    return;
+  if(file == null){
+    if(textBoxValue == null || textBoxValue == ""){
+      alert("値を入力してください。")
+      return;
+    }
+    message = "メッセージ「" + textBoxValue + "」";
+  }else{
+    if(textBoxValue == null || textBoxValue == ""){
+      textBoxValue = null;
+      message = "画像";
+    }else{
+      message = "画像とメッセージ「" + textBoxValue + "」" 
+    }
   }
   
-  var ok = window.confirm("送信していいですか？");
+  
+  
+  var ok = window.confirm(message + "を送信していいですか？");
   if(!ok){
     console.log("キャンセル");
     return;
   }
   
-  // 文字の送信処理
+  var imgName = null;
+  if(file != null){
+    var now = new Date().getTime();
+    imgName = now + "jpeg";
+    console.log("sentFileName:" + imgName)
+  }
+   
   console.log("送信開始:" + userName);
   var socket = io.connect();
-  socket.json.emit("emit_from_client", { msg:textBoxValue, userName:userName, imgPath:"test.png"});
-  console.log("送信終了");
-  
-  // 画像の送信
-  console.log("file:");
-  console.log(file);
-  if(file != null){
-    console.log("ファイル読み込みあり");
-    var name = file.name;
+  if(file == null){
+    // コメントだけ送信
+    console.log("コメントだけ送信:" + textBoxValue);
+    socket.json.emit("emit_from_client", { msg:textBoxValue, userName:userName, imgPath:null});
+    $('#textAreaId').val(null);
+    console.log("送信終了");
+  }else{
+    // 画像がある場合は画像を先に送信する
+    console.log("送信するファイル:" + file);
+    console.log("実際のファイル名:" + file.name);
+    
+    // ファイル名を時刻とするため、そのファイル名の作成
+    var now = new Date().getTime();
+    var imgName = now + ".jpeg";
+    console.log("sentFileName:" + imgName)
+    
+    
     var reader = new FileReader();
-    console.log("name:" + name);
+    
+    // 送信するときにrowデータだと大きすぎるため縮小しておくる
+    // 幅と高さの大きい方の値
     var maxLength = 1000;
+    
+    
     reader.onloadend = function (e) {
+      console.log("Start onloadened method:");
       var data = e.target.result;
       var orientation = getOrientation(data);
       var rotateAngle = exif_rotate_z_orientation_to_css(orientation);
@@ -184,10 +219,10 @@ function send(){
       if (!data) {
         return ;
       }
-      console.log("upload:" + name);
       
-      var OrgWidth = document.getElementById('previewImage').naturalWidth;
-      var OrgHeight = document.getElementById('previewImage').naturalHeight;
+      console.log("upload:" + imgName);
+      var OrgWidth = document.getElementById('previewImageId').naturalWidth;
+      var OrgHeight = document.getElementById('previewImageId').naturalHeight;
       
       var larger = (OrgWidth > OrgHeight) ? OrgWidth : OrgHeight;
       var p = 1.0;
@@ -196,6 +231,8 @@ function send(){
       }
       
       var sentWidth, sentHeight;
+      
+      // iOSだけ特別な処理が必要
       if(type == 1 && orientation > 4){
         sentWidth = OrgHeight * p;
         sentHeight = OrgWidth * p;
@@ -203,19 +240,26 @@ function send(){
         sentWidth = OrgWidth * p;
         sentHeight = OrgHeight * p;
       }
+      
       ImgB64Resize(data, sentWidth, sentHeight, rotateAngle,
           function(img_b64) {
-              socket.emit('upload_from_client', { name : name, data : img_b64});
+            　console.log("画像の縮小が終わったので送信開始");
+              socket.emit('upload_from_client', { name : imgName, data : img_b64});
+              
+              console.log("メッセージの送信開始");
+              socket.json.emit("emit_from_client", { msg:textBoxValue, userName:userName, imgPath:imgName});
+              
+              // 送信終了後の処理(本来は完了通知がきてから実施するべき)
+              $('#previewImageId').attr('src', null ).css('display','none');
+              file = null;
+              $('#fileId').val(null);
+              $('#textAreaId').val(null);
           }
       );
       console.log("upload end:");
       
-      // 送信終了後の処理(本来は完了通知がきてから実施するべき)
-      $('#previewImage').attr('src', null ).css('display','none');
-      file = null;
-      $('#file').val(null);
-      $('#textBox').val(null);
       
+      console.log("Finish onloadened method:");
     };
     reader.readAsDataURL(file);
   }
@@ -260,124 +304,5 @@ function send(){
       };
       img.src = imgB64_src;
   }
-}
-
-
-
-
-/**********************************************
- *  これ以下は利用していない
- **********************************************/
-/**
- * テキストを一度プレビューする場合に利用する
- * コメント：プレビューは画像のみにし、送信ボタンをタップしたらかならずそのメッセージを送信するようにする。
- * */
-function createNewText(){
-
-  var textBoxValue = $('#textBox').val();
-  console.log("textBoxValue:"+textBoxValue);
-  console.log("createNewText:" + document.getElementById(textFieldID));
-  if(textBoxValue == null || textBoxValue == ""){
-    alert("値を入力してください。")
-    return;
-  }
-  if(textField != null){
-    console.log("a");
-    alert("すでに送信候補文字が画面に表示されています。送信したい場合は上部に移動させてください。")
-    return;
-  }
   
-  addText = true;
-  
-  // textBoxからフォーカスを外す
-  $("textBox").blur();
-  
-  // 新しいテキストを追加
-  textField = document.createElement('div'); 
-  textField.id = "textFieldID";
-  textField.innerHTML = textBoxValue;
-  textField.style.position = "absolute";
-  // textField.style.zIndex = "2";
-  textField.style.fontSize = "2em";
-  var objBody = document.getElementsByTagName("body").item(0); 
-  objBody.appendChild(textField); 
-  if(DEBUG)textField.style.border = "1px solid #915";
-  
-  // 画面中央に配置（本当は降ってくるようにしたい）
-  console.log("window.innerWidth/2:"+WINDOW_WITDH/2);
-  console.log("window.innerHeight/2:"+WINDOW_HEIGHT/2);
-  console.log("textField.clientWidth/2:"+textField.clientWidth/2);
-  console.log("textField.clientHeight/2:"+textField.clientHeight/2);
-  
-  // var b = $("div_box_id")div_box_id.style;
-  // console.log('コンテンツ本体：' + b.height + '×' + b.width);
-  // console.log('内部余白込み：' + b.innerHeight() + '×' + b.innerWidth());
-  // console.log('枠線込み：' + b.outerHeight() + '×' + b.outerWidth());
-  // console.log('外部余白込み：' + b.outerHeight(true) + '×' + b.outerWidth(true));
-  textFieldX = textField.style.left = WINDOW_WITDH/2 - textField.clientWidth/2;
-  textFieldY = textField.style.top = WINDOW_HEIGHT/2 - textField.clientHeight/2 - 100;
-  
-  // position: absolute; z-index: 2; VISIBILITY: visible; TOP: 150px; LEFT: 15px; width:1;"
-  
-  
-  
-  
-  if(window.TouchEvent){
-    	console.log("タッチイベントに対応");
-        
-        
-    // イベントリスナーに対応している
-    if(document.addEventListener){
-      console.log("イベントリスナーに対応している");
-    	// ------------------------------------------------------------
-    	// タッチすると実行される関数
-    	// ------------------------------------------------------------
-    	function TouchEventFunc(e){
-        	console.log("TouchEventFunc:" + e + "(" + e.clientX + ", " + e.clientY + ")");
-        	// TouchList オブジェクトを取得
-        	var touch_list = e.changedTouches;
-        			
-          var currentPositionX = e.changedTouches[0].pageX;
-          var currentPositionY = e.changedTouches[0].pageY;
-        	
-        	if(currentPositionY > WINDOW_HEIGHT * 4/5){
-        	  currentPositionY = WINDOW_HEIGHT * 4 /5;
-        	}else if(currentPositionY < WINDOW_HEIGHT * 1/5){
-            
-            alert("「" + textField.innerHTML + "」が送信されました！");
-            
-            var objBody = document.getElementsByTagName("body").item(0); 
-            objBody.removeChild(textField);
-            textField = null;
-            
-            
-            
-          }
-        	textField.style.left = currentPositionX - textField.clientWidth/2;
-          textField.style.top  = currentPositionY - textField.clientHeight/2 ;
-          
-          // alert("textField.clientWidth:" + textField.clientWidth);
-      }
-    
-      var PC = false;
-      if(PC){
-        // document.addEventListener("click",TouchEventFunc);
-        document.addEventListener("mousedown",TouchEventFunc);
-      }else{
-        // タッチを開始すると実行されるイベント
-    	  document.addEventListener("touchstart",TouchEventFunc);
-    
-    		// タッチしたまま平行移動すると実行されるイベント
-    		document.addEventListener("touchmove",TouchEventFunc);
-    
-    		// タッチを終了すると実行されるイベント
-    		document.addEventListener("touchend",TouchEventFunc);
-      }
-    }else{
-      console.log("イベントリスナーに対応していない");
-    }
-    }else{
-    console.log("タッチイベントに未対応");
-    }
-
 }
