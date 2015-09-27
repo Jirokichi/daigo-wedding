@@ -3,7 +3,7 @@
 /**
  * これより下はGoogle Driveのための処理
  * */
-var jsonNumber=0; // for debug
+var jsonNumber=36; // for debug
 var myGoogleDrive = require("./googledrive.js");
 var fs = require('fs');
 var google = require('googleapis');
@@ -58,7 +58,9 @@ io.on('connection', function (socket) {
       myGoogleDrive.authorize(onStartUploadJSONFileToGoogleDrive);
       function onStartUploadJSONFileToGoogleDrive(auth) {
         console.log('~~~~ Start startInitialCallForGoogleDrive');
-        myGoogleDrive.insertJson(auth);
+        myGoogleDrive.insertJson(auth, function () {
+          socket.emit("emit_from_server", "uplaoded:" + jsonfileName);
+        });
         console.log('~~~~ Finish startInitialCallForGoogleDrive');
         jsonNumber++;
       }
@@ -89,9 +91,6 @@ io.on('connection', function (socket) {
       //         console.log(err);
       //     }
       // );
-      
-      // 起動時に認証操作を実施する
-      // var imageFile = fs.readFileSync("public/1442321209075Sample.png");
     
       myGoogleDrive.imageFile = new Buffer(base64, 'base64');//imageFile;
       myGoogleDrive.imageFileName = name;
@@ -99,7 +98,9 @@ io.on('connection', function (socket) {
       myGoogleDrive.authorize(onStartUploadFileToGoogleDrive);
       function onStartUploadFileToGoogleDrive(auth) {
         console.log('~~~~ Start startInitialCallForGoogleDrive');
-        myGoogleDrive.insertImage(auth);
+        myGoogleDrive.insertImage(auth, function () {
+          socket.emit("upload_from_server", "uplaoded:" + name);
+        });
         console.log('~~~~ Finish startInitialCallForGoogleDrive');
       }
       // もしアップロード終了時に合図が欲しいならば

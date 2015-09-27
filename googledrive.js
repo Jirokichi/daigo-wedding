@@ -158,6 +158,7 @@ function insertImage(auth, callback){
       console.error(err);
     }
     console.log("Upload Completed");
+    callback();
     // console.log(res)
     // 下記のURLでアップロードしたファイルに直接アクセスできるのはファイルのパーミッションがpublicの時のみ
     // console.log('https://docs.google.com/a/ドメイン名/uc?id='+res.id);
@@ -184,6 +185,7 @@ function insertJson(auth, callback){
       console.error(err);
     }
     console.log("Upload Completed: JSON file");
+    callback();
     // console.log(res)
     // 下記のURLでアップロードしたファイルに直接アクセスできるのはファイルのパーミッションがpublicの時のみ
     // console.log('https://docs.google.com/a/ドメイン名/uc?id='+res.id);

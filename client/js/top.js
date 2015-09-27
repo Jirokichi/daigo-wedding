@@ -23,7 +23,8 @@ document.body.onload = function(){
     
     if(name != null && name != ""){
         // すでに入力したことがあるということ
-        setTimeout( redirectLink(), 0);
+        $("#topPageTextFieldID").val(name);
+        // setTimeout( redirectLink(), 0);
     }
 }
 

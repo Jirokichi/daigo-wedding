@@ -5,15 +5,14 @@
 var DEBUG = true;
 var KEY_USERNAME = "KEY_NAME"; /*　top.jsでも同じものである必要がある・ユーザ名を保存するためのキー */
 
-
-
 var WINDOW_WITDH;
 var WINDOW_HEIGHT;
-
 var userName = localStorage.getItem(KEY_USERNAME);
+document.getElementById("userNameId").innerHTML = "ユーザー名「" + userName + "」の変更";
 console.log("start daigo.js");
 console.log("userName:" + userName);
 console.log("navigator.userAgent:" + navigator.userAgent);
+console.log("設定項目:" + document.getElementById("userNameId").innerHTML);
 
 var type = 0;// iPad/iPhoneの場合は1となるようにする
 if(navigator.userAgent.indexOf("iPad") > 0 || navigator.userAgent.indexOf("iPhone") > 0){
@@ -21,7 +20,13 @@ if(navigator.userAgent.indexOf("iPad") > 0 || navigator.userAgent.indexOf("iPhon
   // alert("iOS!");
 }
 
+var isSending = false;
+
 var file = null;
+var socket = null;
+
+var textBoxValue = null;
+var imgName = null;
 /**
  * 読み込み時の処理
  * */
@@ -32,6 +37,23 @@ window.onload = function() {
   WINDOW_HEIGHT = window.innerHeight;//$("body").height();
   console.log("width:" + WINDOW_WITDH);
   console.log("height:" + WINDOW_HEIGHT);
+  
+  socket = io.connect();
+  socket.on("emit_from_server", function (msg) {
+      alert("アップロードしました！");
+      console.log("メッセージ送信終了:" + msg);
+      isSending = false;
+  });
+  
+  socket.on("upload_from_server", function (msg1) {
+      console.log("画像送信完了:" + msg1);
+      console.log("送信スタート:");
+      console.log("textBoxValue:" + textBoxValue);
+      console.log("userName:" + userName);
+      console.log("imgName:" + imgName);
+      socket.json.emit("emit_from_client", { msg:textBoxValue, userName:userName, imgPath:imgName});
+  });
+    
 };
 
 
@@ -42,8 +64,8 @@ $(window).resize(function() {
     }
     timer = setTimeout(function() {
         console.log('resized');
-        WINDOW_WITDH = window.innerWidth;//$("body").width();
-        WINDOW_HEIGHT = window.innerHeight;//$("body").height();
+        WINDOW_WITDH = window.innerWidth;
+        WINDOW_HEIGHT = window.innerHeight;
         console.log("resize-width:" + WINDOW_WITDH);
         console.log("resize-height:" + WINDOW_HEIGHT);
     }, 200);
@@ -92,9 +114,11 @@ $('#fileId').change(
         var image = document.getElementById('previewImageId'); 
         //テキストボックスのフィールドには画像が被らないようにする必要があるため、その高さを取得
         var textElementHeight = document.getElementById('div_inputArea_id').scrollHeight;
+        var navBarElementHeight = document.getElementById('navBarId').scrollHeight;
         var OrgWidth = image.naturalWidth;
         var OrgHeight = image.naturalHeight;
         console.log("textElementHeight:" + textElementHeight);
+        console.log("navBarElementHeight:" + navBarElementHeight);
         console.log("OrgWidth:" + OrgWidth);
         console.log("OrgHeight:" + OrgHeight);
          
@@ -104,7 +128,7 @@ $('#fileId').change(
         var p = 1.0;
         
         // テキストボックス分縦の範囲は狭くなる
-        var DIFF_HEIGHT = WINDOW_HEIGHT - textElementHeight;
+        var DIFF_HEIGHT = WINDOW_HEIGHT - textElementHeight - navBarElementHeight;
         console.log("DIFF_HEIGHT:" + DIFF_HEIGHT);
         
         // ９０度回転など、縦横が入れ替わる場合には事前に最大幅、高さを入れ替えておく
@@ -124,7 +148,7 @@ $('#fileId').change(
         
         
         var x_image = ( WINDOW_WITDH - image.width ) / 2;
-        var y_image = (WINDOW_HEIGHT - image.height - textElementHeight ) / 2;
+        var y_image = (WINDOW_HEIGHT - image.height - textElementHeight + navBarElementHeight ) / 2;
         console.log("WINDOW_WITDH:" + WINDOW_WITDH);
         console.log("WINDOW_HEIGHT:" + WINDOW_HEIGHT);
         console.log("x_image(image.style.leftにセットする値):" + x_image);
@@ -149,25 +173,28 @@ $('#fileId').change(
 function send(){
   console.log("send()");
 
+  if(isSending){
+    alert("送信中です。少しお待ち下さい...");
+    return;
+  }
+
   var message;
-  var textBoxValue = $('#textAreaId').val();
-  console.log("textBoxValue:"+textBoxValue);
+  var lTextBoxValue = $('#textAreaId').val();
+  console.log("lTextBoxValue:"+lTextBoxValue);
   if(file == null){
-    if(textBoxValue == null || textBoxValue == ""){
+    if(lTextBoxValue == null || lTextBoxValue == ""){
       alert("値を入力してください。")
       return;
     }
-    message = "メッセージ「" + textBoxValue + "」";
+    message = "メッセージ「" + lTextBoxValue + "」";
   }else{
-    if(textBoxValue == null || textBoxValue == ""){
-      textBoxValue = null;
+    if(lTextBoxValue == null || lTextBoxValue == ""){
+      lTextBoxValue = null;
       message = "画像";
     }else{
-      message = "画像とメッセージ「" + textBoxValue + "」" 
+      message = "画像とメッセージ「" + lTextBoxValue + "」" 
     }
   }
-  
-  
   
   var ok = window.confirm(message + "を送信していいですか？");
   if(!ok){
@@ -175,29 +202,28 @@ function send(){
     return;
   }
   
-  var imgName = null;
-  if(file != null){
-    var now = new Date().getTime();
-    imgName = now + "jpeg";
-    console.log("sentFileName:" + imgName)
-  }
+  // 送信中に変更
+  isSending = true;
+  
+  textBoxValue = lTextBoxValue;
+  imgName = null;
    
   console.log("送信開始:" + userName);
-  var socket = io.connect();
+  
   if(file == null){
     // コメントだけ送信
     console.log("コメントだけ送信:" + textBoxValue);
     socket.json.emit("emit_from_client", { msg:textBoxValue, userName:userName, imgPath:null});
-    $('#textAreaId').val(null);
-    console.log("送信終了");
+    $('#textAreaId').val(null);   
   }else{
+
     // 画像がある場合は画像を先に送信する
     console.log("送信するファイル:" + file);
     console.log("実際のファイル名:" + file.name);
     
     // ファイル名を時刻とするため、そのファイル名の作成
     var now = new Date().getTime();
-    var imgName = now + ".jpeg";
+    imgName = now + ".jpeg";
     console.log("sentFileName:" + imgName)
     
     
@@ -243,12 +269,9 @@ function send(){
       
       ImgB64Resize(data, sentWidth, sentHeight, rotateAngle,
           function(img_b64) {
-            　console.log("画像の縮小が終わったので送信開始");
+            　console.log("画像の縮小が終わったので送信開始:" + imgName);
               socket.emit('upload_from_client', { name : imgName, data : img_b64});
-              
-              console.log("メッセージの送信開始");
-              socket.json.emit("emit_from_client", { msg:textBoxValue, userName:userName, imgPath:imgName});
-              
+          
               // 送信終了後の処理(本来は完了通知がきてから実施するべき)
               $('#previewImageId').attr('src', null ).css('display','none');
               file = null;
@@ -257,8 +280,6 @@ function send(){
           }
       );
       console.log("upload end:");
-      
-      
       console.log("Finish onloadened method:");
     };
     reader.readAsDataURL(file);

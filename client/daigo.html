@@ -17,6 +17,35 @@
     <link href="css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body background="img/daigo.png">
+  
+  <div class="navbar navbar-default navbar-fixed-top" id="navBarId">
+    <div class="navbar-header">
+      <p class="navbar-brand">加藤夫妻結婚式</p>
+      <button class="navbar-toggle" data-toggle="collapse" data-target=".target">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+    </div>
+    <div class="collapse navbar-collapse target">
+        <ul class="nav navbar-nav navbar-right">
+          <li><a href="index.html" class="navbar-brand" id="userNameId">ユーザー名変更</a></li>
+        </ul>
+      </div>
+    </div>
+  
+  <!--<div align="right">-->
+  <!--  <div class="btn-group">-->
+  <!--  <button id="settingId" class="btn btn-info dropdown-toggle" data-toggle="dropdown">-->
+  <!--      設定 <span class="caret"></span>-->
+  <!--  </button>-->
+  <!--  <ul class="dropdown-menu">-->
+  <!--    <li><a href="">ユーザー名変更</a></li>-->
+  <!--    <li><a href="">ユーザー名変更</a></li>-->
+  <!--  </ul>-->
+  <!--  </div>-->
+  <!--</div>-->
+  
   <form id=contents>
     <img id="previewImageId" src="" alt="写真"/> 
     <div class="form-group" id="div_inputArea_id"> 
@@ -25,6 +54,7 @@
       <button type="button" class="btn btn-primary" id="sendButtonId" style="width:100%;" onClick="send()" >送信</button>
     </div>
   </form>
+  
   <script src="js/daigo.js"></script>
   </script>
 </body>
