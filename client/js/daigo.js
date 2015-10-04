@@ -90,6 +90,19 @@ $('#fileId').change(
     file = $(this).prop('files')[0];
     console.log("file:" + file.size);
     console.log(file);
+    console.log(file.type);
+    
+    if(file.type.indexOf("image/jpeg") == -1 && file.type.indexOf("image/png") == -1){
+      
+      alert("画像(jpeg及びpngファイル)以外は対象外です");
+      file = null;
+      $('#fileId').val(null);
+      $('#previewImageId').attr('src', null ).css('display','none');
+      return;
+    }
+    
+    
+    
     var fr = new FileReader();
     fr.onload = function(e) {
       console.log("FileReader onload:");
@@ -327,3 +340,17 @@ function send(){
   }
   
 }
+
+$('#textAreaId').bind('keydown', function(e) {
+    if (e.which == 13) {
+        return false;
+    }
+}).bind('blur', function() {
+    // 貼りつけられたテキストの改行コードを削除
+    var $textarea = $(this),
+        text = $textarea.val(),
+        new_text = text.replace(/\n/g, "");
+    if (new_text != text) {
+        $textarea.val(new_text);
+    }
+});
