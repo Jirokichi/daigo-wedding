@@ -50,7 +50,7 @@
     <img id="previewImageId" src="" alt="写真"/> 
     <div class="form-group" id="div_inputArea_id"> 
       <input type="file" class="form-control" id="fileId"></input>
-      <textarea class="form-control" id="textAreaId"  placeholder="お祝いのメッセージを入力しましょう！" onblur = "onMyBlur()"></textarea>
+      <textarea class="form-control" id="textAreaId"  maxlength="30"  placeholder="お祝いのメッセージを入力しましょう！(30文字制限)" onblur = "onMyBlur()"></textarea>
       <button type="button" class="btn btn-primary" id="sendButtonId" style="width:100%;" onClick="send()" >送信</button>
     </div>
   </form>

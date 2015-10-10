@@ -2,7 +2,6 @@
 
 <!--[if IE]><script type="text/javascript" src="excanvas.js"></script><![endif]-->
 
-var DEBUG = true;
 var KEY_USERNAME = "KEY_NAME"; /*　top.jsでも同じものである必要がある・ユーザ名を保存するためのキー */
 
 var WINDOW_WITDH;
@@ -13,6 +12,9 @@ console.log("start daigo.js");
 console.log("userName:" + userName);
 console.log("navigator.userAgent:" + navigator.userAgent);
 console.log("設定項目:" + document.getElementById("userNameId").innerHTML);
+
+var DEBUG = 1; // 0ならデバッグモード(DEBUG_MAX_COUNT回同じものをアップロード)オフ
+var DEBUG_MAX_COUNT = 150;
 
 var type = 0;// iPad/iPhoneの場合は1となるようにする
 if(navigator.userAgent.indexOf("iPad") > 0 || navigator.userAgent.indexOf("iPhone") > 0){
@@ -40,18 +42,30 @@ window.onload = function() {
   
   socket = io.connect();
   socket.on("emit_from_server", function (msg) {
-      alert("アップロードしました！");
-      console.log("メッセージ送信終了:" + msg);
-      isSending = false;
+      if(DEBUG == 0 || DEBUG > DEBUG_MAX_COUNT){
+        alert("アップロードしました！");
+        console.log("メッセージ送信終了:" + msg);
+        isSending = false;
+      }else{
+        DEBUG++;
+        console.log("まだまだ続く:" + DEBUG);
+        isSending = false;
+        send();
+      }
   });
   
   socket.on("upload_from_server", function (msg1) {
+    
       console.log("画像送信完了:" + msg1);
       console.log("送信スタート:");
       console.log("textBoxValue:" + textBoxValue);
       console.log("userName:" + userName);
       console.log("imgName:" + imgName);
-      socket.json.emit("emit_from_client", { msg:textBoxValue, userName:userName, imgPath:imgName});
+      if(DEBUG == 0){
+        socket.json.emit("emit_from_client", { msg:textBoxValue, userName:userName, imgPath:imgName});
+      }else{
+        socket.json.emit("emit_from_client", { msg:textBoxValue + DEBUG, userName:userName, imgPath:imgName});
+      }
   });
     
 };
@@ -209,10 +223,12 @@ function send(){
     }
   }
   
-  var ok = window.confirm(message + "を送信していいですか？");
-  if(!ok){
-    console.log("キャンセル");
-    return;
+  if(DEBUG == 0){
+    var ok = window.confirm(message + "を送信していいですか？");
+    if(!ok){
+      console.log("キャンセル");
+      return;
+    }
   }
   
   // 送信中に変更
@@ -286,10 +302,12 @@ function send(){
               socket.emit('upload_from_client', { name : imgName, data : img_b64});
           
               // 送信終了後の処理(本来は完了通知がきてから実施するべき)
-              $('#previewImageId').attr('src', null ).css('display','none');
-              file = null;
-              $('#fileId').val(null);
-              $('#textAreaId').val(null);
+              if(DEBUG == 0 || DEBUG == DEBUG_MAX_COUNT){
+                $('#previewImageId').attr('src', null ).css('display','none');
+                file = null;
+                $('#fileId').val(null);
+                $('#textAreaId').val(null);
+              }
           }
       );
       console.log("upload end:");
@@ -341,6 +359,7 @@ function send(){
   
 }
 
+//  改行を禁止にする処理
 $('#textAreaId').bind('keydown', function(e) {
     if (e.which == 13) {
         return false;
