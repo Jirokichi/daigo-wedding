@@ -203,23 +203,37 @@ function getGoogleDriveFileList(auth, callback){
   // 現在のGoogleDrive内のファイルのリストを取得
   service.files.list({
     auth: auth,
-    maxResults: 10,
+    maxResults: 10000,
   }, function(err, response) {
     if (err) {
       console.log('The API returned an error: ' + err);
       return;
     }
+    var jsonNumber = 0;
     var files = response.items;
     if (files.length == 0) {
       console.log('No files found.');
     } else {
-      console.log('Files:');
+      // console.log('Files:');
       for (var i = 0; i < files.length; i++) {
         var file = files[i];
-        console.log('             %s (%s)', file.title, file.id);
+        // console.log('             %s (%s)', file.title, file.id);
+        
+        var extension;
+        var fileTypes = file.title.split(".");
+        var len = fileTypes.length;
+        if (len === 0) {
+          
+        }else{
+          extension = fileTypes[len - 1];
+          if(extension.toLowerCase() === "json"){
+            jsonNumber++;
+          }
+        }
       }
     }
-    callback(auth);
+    
+    callback(jsonNumber);
     console.log("finish getGoogleDriveFileList");
   });
 }

@@ -3,7 +3,6 @@
 /**
  * これより下はGoogle Driveのための処理
  * */
-var jsonNumber=36; // for debug
 var myGoogleDrive = require("./googledrive.js");
 var fs = require('fs');
 var google = require('googleapis');
@@ -22,8 +21,10 @@ console.log("Called authorize method")
  */
 function onStartInitialCallForGoogleDrive(auth) {
   console.log('~~~~ Start startInitialCallForGoogleDrive');
-  // ファイルリストの取得
-  // myGoogleDrive.getGoogleDriveFileList(auth, testAddImage);
+  // ファイルリスト取得して次のjsonNumberを
+  myGoogleDrive.getGoogleDriveFileList(auth, function (number){
+    console.log("jsonNumber:"+number);
+  });
   console.log('~~~~ Finish startInitialCallForGoogleDrive');
 }
 
@@ -49,20 +50,19 @@ io.on('connection', function (socket) {
     
   socket.on("emit_from_client", function(data){
     console.log("クライアント「"+ data.userName + "」から次のデータ受信:" + data.msg);
-    var jsonfileName = jsonNumber + '.json';
-    // var outputPath = './public/' + jsonfileName;
-    // fs.writeFile(outputPath, JSON.stringify(data, null, '    '));
     
-    myGoogleDrive.jsonFile = JSON.stringify(data, null, '    ');//imageFile;
-    myGoogleDrive.jsonFileName = jsonfileName;
     myGoogleDrive.authorize(onStartUploadJSONFileToGoogleDrive);
     function onStartUploadJSONFileToGoogleDrive(auth) {
       console.log('~~~~ Start startInitialCallForGoogleDrive');
-      myGoogleDrive.insertJson(auth, function () {
-        socket.emit("emit_from_server", "uplaoded:" + jsonfileName);
+      myGoogleDrive.getGoogleDriveFileList(auth, function (number){
+        var jsonfileName = number + '.json';
+        myGoogleDrive.jsonFile = JSON.stringify(data, null, '    ');//imageFile;
+        myGoogleDrive.jsonFileName = jsonfileName;
+        myGoogleDrive.insertJson(auth, function () {
+          socket.emit("emit_from_server", "uplaoded:" + jsonfileName);
+        });
+        console.log('~~~~ Finish startInitialCallForGoogleDrive');
       });
-      console.log('~~~~ Finish startInitialCallForGoogleDrive');
-      jsonNumber++;
     }
   });
 
@@ -78,19 +78,6 @@ io.on('connection', function (socket) {
     if (!base64) {
         console.log('fal to parse image');
     }
-
-    // 保存するならば
-    // var now = new Date().getTime();
-    // var outputPath = './public/' + now + name;
-
-    // fs.writeFile(
-    //     outputPath,
-    //     new Buffer(base64, 'base64'),
-    //     function (err) {
-    //       　console.log("fs.writeFile")
-    //         console.log(err);
-    //     }
-    // );
   
     myGoogleDrive.imageFile = new Buffer(base64, 'base64');//imageFile;
     myGoogleDrive.imageFileName = name;
