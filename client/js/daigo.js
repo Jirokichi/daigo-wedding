@@ -13,7 +13,7 @@ console.log("userName:" + userName);
 console.log("navigator.userAgent:" + navigator.userAgent);
 console.log("設定項目:" + document.getElementById("userNameId").innerHTML);
 
-var DEBUG = 1; // 0ならデバッグモード(DEBUG_MAX_COUNT回同じものをアップロード)オフ
+var DEBUG = 0; // 0ならデバッグモード(DEBUG_MAX_COUNT回同じものをアップロード)オフ
 var DEBUG_MAX_COUNT = 150;
 
 var type = 0;// iPad/iPhoneの場合は1となるようにする

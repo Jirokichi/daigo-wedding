@@ -48,9 +48,22 @@
   
   <form id=contents>
     <img id="previewImageId" src="" alt="写真"/> 
-    <div class="form-group" id="div_inputArea_id"> 
-      <input type="file" class="form-control" id="fileId"></input>
-      <textarea class="form-control" id="textAreaId"  maxlength="30"  placeholder="お祝いのメッセージを入力しましょう！(30文字制限)" onblur = "onMyBlur()"></textarea>
+    <div class="form-group" id="div_inputArea_id" > 
+      <!--<input type="file" class="form-control" id="fileId">↑画像ここ！</input>-->
+      <input type="file" id="fileId" name="file_input" style="display: none;">
+      <div class="input-group">
+          <span class="input-group-btn">
+              <button type="button" class="btn btn-primary" onclick="$('#fileId').click();">画像
+              
+              <!--<img src="img/image.png" alt="画像" onclick="$('#fileId').click();">-->
+                  <!--<i class="glyphicon glyphicon glyphicon-picture"></i>-->
+              </button>
+          </span>
+          <input id="dummy_file" type="text" onclick="$('#fileId').click();" class="form-control" placeholder="画像選択..." readonly>
+      </div>
+      
+      
+      <textarea class="form-control" id="textAreaId"  maxlength="30"  placeholder="お祝いのメッセージ(最大30文字)を入力しましょう！" onblur = "onMyBlur()"></textarea>
       <button type="button" class="btn btn-primary" id="sendButtonId" style="width:100%;" onClick="send()" >送信</button>
     </div>
   </form>
