@@ -194,7 +194,20 @@ $('#fileId').change(
   }
 );
 
-
+// 絵文字削除処理
+function replaceEmoji(message){
+  var ranges = [
+          '\ud83c[\udf00-\udfff]',
+          '\ud83d[\udc00-\ude4f]',
+          '\ud83d[\ude80-\udeff]',
+          '\ud7c9[\ude00-\udeff]',
+          '[\u2600-\u27BF]'
+  ];
+  var ex = new RegExp(ranges.join('|'), 'g');
+  message = message.replace(ex, '♡'); //ここで削除
+  // alert(message); //絵文字だよ！
+  return message
+}
 
 // 送信ボタンがクリックされたときの処理
 function send(){
@@ -207,6 +220,9 @@ function send(){
 
   var message;
   var lTextBoxValue = $('#textAreaId').val();
+  console.log("lTextBoxValue:"+lTextBoxValue);
+  // 絵文字削除処理
+  lTextBoxValue = replaceEmoji(lTextBoxValue);
   console.log("lTextBoxValue:"+lTextBoxValue);
   if(file == null){
     if(lTextBoxValue == null || lTextBoxValue == ""){
@@ -222,6 +238,11 @@ function send(){
       message = "画像とメッセージ「" + lTextBoxValue + "」" 
     }
   }
+  
+  
+  
+  
+  
   
   if(DEBUG == 0){
     var ok = window.confirm(message + "を送信していいですか？");

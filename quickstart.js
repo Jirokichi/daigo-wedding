@@ -71,7 +71,7 @@ io.on('connection', function (socket) {
     var name = data.name;
     var img = data.data;
     console.log("upload from client:" + name);
-    console.log("upload from client:" + img);
+    // console.log("upload from client:" + img);
     var imgStructure = img.split(',');
     var base64 = imgStructure[1];
 
